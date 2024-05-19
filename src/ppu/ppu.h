@@ -22,5 +22,6 @@ void WriteVMDATALow(uint8_t data);
 void WriteVMDATAHi(uint8_t data);
 
 void WriteCGDATA(uint8_t data);
+void WriteCGADD(uint8_t data);
 
 }

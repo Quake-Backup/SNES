@@ -7,8 +7,12 @@
 
 union Register
 {
-    uint8_t lo;
     uint16_t full;
+    struct
+    {
+        uint8_t lo;
+        uint8_t hi;
+    };
 };
 
 class CPU
@@ -45,6 +49,9 @@ private:
     void SetFlag(Flags flag, bool set);
     bool GetFlag(Flags flag);
 
+    uint16_t GetDirXAddr();
+    uint16_t GetAbsXAddr();
+
     int TsbDir(); // 0x04
     int PhpImp(); // 0x08
     int OraImm(); // 0x09
@@ -57,11 +64,14 @@ private:
     int TrbAbs(); // 0x1C
     int JsrAbs(); // 0x20
     int JslLng(); // 0x22
+    int RolDir(); // 0x26
     int PlpImp(); // 0x28
     int AndImm(); // 0x29
+    int RolImp(); // 0x2A
     int PldImp(); // 0x2B
     int BitAbs(); // 0x2C
     int BmiRel(); // 0x30
+    int SecImp(); // 0x38
     int DecAcc(); // 0x3A
     int AndLnX(); // 0x3F
     int RtiImp(); // 0x40
@@ -79,6 +89,7 @@ private:
     int AdcDrP(); // 0x67
     int PlaImp(); // 0x68
     int AdcImm(); // 0x69
+    int RorImp(); // 0x6A
     int RtlImp(); // 0x6B
     int JmpAbP(); // 0x6C
     int StzDrx(); // 0x74
@@ -93,9 +104,11 @@ private:
     int BitImm(); // 0x89
     int TxaImp(); // 0x8A
     int PhbImp(); // 0x8B
+    int StyAbs(); // 0x8C
     int StaAbs(); // 0x8D
     int StxAbs(); // 0x8E
     int BccRel(); // 0x90
+    int StaDrp(); // 0x92
     int TyaImp(); // 0x98
     int StaAbY(); // 0x99
     int TxsImp(); // 0x9A
@@ -114,9 +127,9 @@ private:
     int PlbImp(); // 0xAB
     int LdaAbs(); // 0xAD
     int LdxAbs(); // 0xAE
-    int LdaDPY(); // 0xA0 [dir],y
     int BcsRel(); // 0xB0
     int LdaDpt(); // 0xB2
+    int LdaDPY(); // 0xB7 [dir],y
     int TyxImp(); // 0xBB
     int LdaAbx(); // 0xBD
     int LdaLnX(); // 0xBF
@@ -124,9 +137,11 @@ private:
     int RepImm(); // 0xC2
     int CpyDir(); // 0xC4
     int CmpDir(); // 0xC5
+    int DecDir(); // 0xC6
     int InyImp(); // 0xC8
     int CmpImm(); // 0xC9
     int DexImp(); // 0xCA
+    int CmpAbs(); // 0xCD
     int BneRel(); // 0xD0
     int CldImp(); // 0xD8
     int PhxImp(); // 0xDA

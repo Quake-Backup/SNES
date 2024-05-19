@@ -2,7 +2,7 @@
 #include "../ppu/ppu.h"
 #include "hdma.h"
 #include "../cpu/cpu.h"
-
+#include "../sound/spc700.h"
 #include <fstream>
 
 uint8_t* rom;
@@ -83,6 +83,8 @@ uint8_t Bus::Read8(uint32_t addr)
             return hvbjoy;
         case 0x4016:
             return 0;
+        case 0x2140 ... 0x2143:
+            return SPC700::ReadPort(addr & 0x3);
         }
         
         printf("Read8 from unknown addr 0x%02x:0x%04x\n", bank, addr);
@@ -129,6 +131,8 @@ uint16_t Bus::Read16(uint32_t addr)
             return hvbjoy;
         case 0x4218 ... 0x421F:
             return 0;
+        case 0x2140:
+            return SPC700::ReadPort(0) | (SPC700::ReadPort(1) << 8);
         }
         
         printf("Read16 from unknown addr 0x%02x:0x%04x\n", bank, addr);
@@ -157,17 +161,14 @@ void Bus::Write8(uint32_t addr, uint8_t data)
     uint8_t bank = (addr >> 16) & 0xff;
     addr &= 0xFFFF;
 
-    if (addr == 0x108 || addr == 0x109 || addr == 0x10A || addr == 0x10B)
-    {
-        printf("Writing 0x%02x to 0x%04x\n", data, addr);
-    }
-
     switch (bank)
     {
     case 0x00 ... 0x3F:
     {
         if (addr < 0x2000)
         {
+            if (addr >= 0x04B0 && addr < 0x6B0)
+                printf("Writing 0x%02x to RGBData\n", data);
             ram[addr] = data;
             return;
         }
@@ -198,6 +199,9 @@ void Bus::Write8(uint32_t addr, uint8_t data)
         case 0x2119:
             PPU::WriteVMDATAHi(data);
             return;
+        case 0x2121:
+            PPU::WriteCGADD(data);
+            return;
         case 0x2122:
             PPU::WriteCGDATA(data);
             return;
@@ -209,6 +213,12 @@ void Bus::Write8(uint32_t addr, uint8_t data)
         case 0x2130:
         case 0x2131:
         case 0x2133:
+            return;
+        case 0x2140:
+            SPC700::WritePort(0, data);
+            return;
+        case 0x2141:
+            SPC700::WritePort(1, data);
             return;
         case 0x4200:
             printf("[BUS]: Writing 0x%02x to NMITIMEN\n", data);
@@ -274,6 +284,8 @@ void Bus::Write16(uint32_t addr, uint16_t data)
     {
         if (addr < 0x2000)
         {
+            if (addr >= 0x04B0 && addr < 0x6B0)
+                printf("Writing 0x%04x to RGBData\n", data);
             *(uint16_t*)&ram[addr] = data;
             return;
         }
@@ -287,6 +299,14 @@ void Bus::Write16(uint32_t addr, uint16_t data)
             PPU::WriteVMDATA(data);
             return;
         case 0x212C:
+            return;
+        case 0x2140:
+            SPC700::WritePort(0, data);
+            SPC700::WritePort(1, data >> 8);
+            return;
+        case 0x2142:
+            SPC700::WritePort(2, data);
+            SPC700::WritePort(3, data >> 8);
             return;
         case 0x4305:
         {

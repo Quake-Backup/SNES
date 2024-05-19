@@ -8,7 +8,9 @@ set(SOURCES src/mem/Bus.cpp
             src/cpu/cpu.cpp
             src/main.cpp
             src/ppu/ppu.cpp
-            src/mem/hdma.cpp)
+            src/mem/hdma.cpp
+            src/sound/spc700.cpp
+            src/sound/dsp.cpp)
 
 include_directories(${CMAKE_SOURCE}/src)
 include_directories(${CMAKE_SOURCE})

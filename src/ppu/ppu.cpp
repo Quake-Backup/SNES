@@ -25,6 +25,8 @@ SDL_Renderer* renderer;
 SDL_Texture* screen_texture;
 uint32_t framebuffer[256*256];
 
+#define printf(x, ...) 0
+
 void PPU::Init()
 {
     window = SDL_CreateWindow("SuperNinty", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1024, 896, 0);
@@ -32,6 +34,7 @@ void PPU::Init()
     screen_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, 256, 256);
 
     cgram = new uint8_t[512];
+    memset(cgram, 0, 512);
 }
 
 void RenderScreen()
@@ -58,7 +61,7 @@ void RenderScreen()
             uint16_t addr = base_addr + (y*32*2) + (x*2);
             
             uint16_t tile = *(uint16_t*)&vram[addr];
-            // printf("Reading tile (%d,%d) (0x%04x) from 0x%04x\n", x, y, tile, addr);
+            printf("Reading tile (%d,%d) (0x%04x) from 0x%04x\n", x, y, tile, addr);
 
             uint8_t palette = (tile >> 10) & 0x7;
             tile &= 0x3FF;
@@ -69,10 +72,10 @@ void RenderScreen()
                 uint16_t addr = (tile * 32) + (tile_y*4);
                 uint8_t bplane_1 = vram[addr];
                 uint8_t bplane_2 = vram[addr+1];
-                uint8_t bplane_3 = vram[addr+2];
-                uint8_t bplane_4 = vram[addr+3];
+                uint8_t bplane_3 = vram[addr+16];
+                uint8_t bplane_4 = vram[addr+17];
 
-                // printf("Read tile bitplanes (%x, %x, %x, %x) from 0x%04x\n", bplane_1, bplane_2, bplane_3, bplane_4, addr);
+                printf("Read tile bitplanes (%x, %x, %x, %x) from 0x%04x (", bplane_1, bplane_2, bplane_3, bplane_4, addr);
 
                 for (int tile_x = 0; tile_x < 8; tile_x++)
                 {
@@ -90,12 +93,21 @@ void RenderScreen()
                     default: exit(1);
                     }
 
-                    uint16_t color = *(uint16_t*)&cgram[(palette*16)+(pal_num*4)];
+                    printf("%02x", pal_num);
+                    if (tile_x == 7)
+                        printf(")\n");
+
+                    uint16_t color = *(uint16_t*)&cgram[(palette*32)+(pal_num*2)];
+                    color = __bswap_16(color);
                     int r = color & 0x1F;
                     int g = (color >> 5) & 0x1F;
                     int b = (color >> 10) & 0x1F;
 
-                    framebuffer[(y*256*8)+(x*8) + tile_x + (tile_y*256)] = (r << 24) | (g << 16) | (b << 8) | 0xff;
+                    r *= 8;
+                    g *= 8;
+                    b *= 8;
+
+                    framebuffer[(y*8*256)+(x*8) + tile_x + (tile_y*256)] = (r << 24) | (g << 16) | (b << 8) | 0xff;
                 }
             }
         }
@@ -123,13 +135,7 @@ void PPU::Dump()
     printf("Done\n");
 
     RenderScreen();
-    for (int i = 0; i < 10000000; i++)
-    {
-        i -= 1;
-        i += 1;
-    }
 }
-#define printf(x, ...) 0
 
 void PPU::Tick(int cycles)
 {
@@ -157,8 +163,6 @@ void PPU::Tick(int cycles)
 
     printf("V:%3d H:%3d F:%2d\n", scanline, cur_cycles, frames);
 }
-
-#undef printf
 
 void PPU::WriteINIDISP(uint8_t data)
 {
@@ -196,7 +200,6 @@ void PPU::WriteVMAIN(uint8_t data)
 
 void PPU::WriteVMDATA(uint16_t data)
 {
-    printf("Sending 0x%04x to VRAM (0x%04x)\n", data, vram_addr<<1);
     *(uint16_t*)&vram[(vram_addr << 1) & 0x7FFF] = data;
     vram_addr++;
 }
@@ -217,5 +220,13 @@ void PPU::WriteVMDATAHi(uint8_t data)
 
 void PPU::WriteCGDATA(uint8_t data)
 {
+    printf("[PPU]: Setting CGRAM 0x%04x to 0x%02x\n", cg_addr, data);
     cgram[cg_addr++] = data;
+    cg_addr &= 0x1FF;
+}
+
+void PPU::WriteCGADD(uint8_t data)
+{
+    printf("[PPU]: Setting CGRAM addr to 0x%04x\n", data);
+    cg_addr = data;
 }

@@ -52,6 +52,9 @@ void HDMA::WriteBBADx(int chan, uint8_t data)
 
 void HDMA::WriteMDMAEN(uint8_t data)
 {
+    if (!data)
+        return;
+
     if (data != 0x1)
     {
         printf("TODO: Channels other than 1 being started (0x%02x)\n", data);
@@ -59,7 +62,7 @@ void HDMA::WriteMDMAEN(uint8_t data)
     }
 
     auto& c = chans[0];
-
+#define printf(x, ...) 0
     printf("[HDMA]: Transferring %d bytes (step %d reg %x type %d)\n", c.byteCount, (c.dmap >> 3) & 3, c.bbus, c.dmap & 0x7);
 
     uint8_t step = (c.dmap >> 3) & 3;
